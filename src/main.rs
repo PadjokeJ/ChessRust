@@ -18,7 +18,7 @@ fn main() {
     let sdl_context: Sdl = sdl2::init().unwrap();
     let video_subsystem: VideoSubsystem = sdl_context.video().unwrap();
     let window: Window = video_subsystem
-        .window("Template Game", res.0, res.1)
+        .window("Chess", res.0, res.1)
         .build()
         .unwrap();
 
