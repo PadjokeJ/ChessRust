@@ -1,38 +1,38 @@
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
-trait Norm {
+pub trait Norm {
     fn norm(self) -> f32;
     fn sqr_norm(self) -> f32;
     fn normalized(self) -> Self;
     fn normalize(&mut self);
 }
 
-trait Distance {
+pub trait Distance {
     fn distance_to(self, other: V2) -> f32;
     fn sqr_distance_to(self, other: V2) -> f32;
 }
 #[derive(Debug, Copy, Clone, PartialEq)]
-struct V2 {
-    x: f32,
-    y: f32,
+pub struct V2 {
+    pub x: f32,
+    pub y: f32,
 }
 impl V2 {
-    fn new(x: f32, y: f32) -> V2 {
+    pub fn new(x: f32, y: f32) -> V2 {
         V2 {x: x, y: y}
     }
-    fn zero() -> V2 {
+    pub fn zero() -> V2 {
         V2::new(0.0, 0.0)
     }
-    fn up() -> V2 {
+    pub fn up() -> V2 {
         V2::new(0.0, -1.0)
     }
-    fn down() -> V2 {
+    pub fn down() -> V2 {
         V2::new(0.0, 1.0)
     }
-    fn left() -> V2 {
+    pub fn left() -> V2 {
         V2::new(-1.0, 0.0)
     }
-    fn right() -> V2 {
+    pub fn right() -> V2 {
         V2::new(1.0, 1.0)
     }
 }

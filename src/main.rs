@@ -3,13 +3,15 @@ use std::time::{Duration, Instant};
 
 use sdl2::event::Event;
 use sdl2::pixels::Color;
-use sdl2::rect::{Point, Rect};
-use sdl2::render::Texture;
+use sdl2::rect::Rect;
+use sdl2::sys::RetainPermanent;
 use sdl2::video::Window;
 use sdl2::{Sdl, VideoSubsystem};
-use sdl2::{keyboard::Keycode, render::Canvas};
+use sdl2::{keyboard::Keycode};
 use sdl2::image::LoadTexture;
 use sdl2::image::InitFlag;
+
+use vectors::v2::V2;
 
 extern crate sdl2;
 
@@ -58,7 +60,10 @@ fn main() {
 
     let mut event_pump = sdl_context.event_pump().unwrap();
 
-    let mut input_vec: (bool, bool, bool, bool) = (false, false, false, false);
+    let mut mouse_coords = V2::zero();
+    let mut pick_up: bool = false;
+    let mut release: bool = false;
+    let mut hand: i8 = 0;
 
     let mut delta_time: f32 = 0f32;
     let max_fps = 60.0;
@@ -73,41 +78,39 @@ fn main() {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'main,
-                Event::KeyDown {
-                    keycode: Some(Keycode::W),
-                    ..
-                } => input_vec.0 = true,
-                Event::KeyDown {
-                    keycode: Some(Keycode::A),
-                    ..
-                } => input_vec.1 = true,
-                Event::KeyDown {
-                    keycode: Some(Keycode::S),
-                    ..
-                } => input_vec.2 = true,
-                Event::KeyDown {
-                    keycode: Some(Keycode::D),
-                    ..
-                } => input_vec.3 = true,
-                Event::KeyUp {
-                    keycode: Some(Keycode::W),
-                    ..
-                } => input_vec.0 = false,
-                Event::KeyUp {
-                    keycode: Some(Keycode::A),
-                    ..
-                } => input_vec.1 = false,
-                Event::KeyUp {
-                    keycode: Some(Keycode::S),
-                    ..
-                } => input_vec.2 = false,
-                Event::KeyUp {
-                    keycode: Some(Keycode::D),
-                    ..
-                } => input_vec.3 = false,
-
+                Event::MouseMotion { x, y, .. } => {
+                    mouse_coords.x = x as f32;
+                    mouse_coords.y = y as f32;
+                }
+                Event::MouseButtonDown { .. } => {
+                    pick_up = true;
+                }
+                Event::MouseButtonUp { .. } => {
+                    release = true;
+                }
                 _ => (),
             }
+            if pick_up {
+                let x = mouse_coords.x as i32 / 80;
+                let y = mouse_coords.y as i32 / 80;
+
+                let index = (y * 8 + x) as usize;
+                hand = board[index];
+                board[index] = 0;
+
+                pick_up = false;
+            }
+            if release {
+                let x = mouse_coords.x as i32 / 80;
+                let y = mouse_coords.y as i32 / 80;
+
+                let index = (y * 8 + x) as usize;
+                board[index] = hand;
+                hand = 0;
+
+                release = false;
+            }
+
 
             canvas.set_draw_color(Color::RGB(0, 0, 0));
             canvas.clear();
@@ -148,6 +151,25 @@ fn main() {
                     _ = canvas.copy(texture, src_rect, dest_rect);
                 }
                 
+            }
+
+            if hand != 0 {
+                let mut texture;
+
+                if chess::is_white(hand){
+                    let index = hand as usize - 9;
+                    texture = &w_pieces[index];
+                } else {
+                    let index = hand as usize - 1;
+                    texture = &b_pieces[index];
+                }
+
+                let attributes = texture.query();
+                let src_rect = Rect::new(0, 0, attributes.width, attributes.height);
+
+                let dest_rect = Rect::new(mouse_coords.x as i32 - 48, mouse_coords.y as i32 - 48, 96, 96);
+
+                _ = canvas.copy(texture, src_rect, dest_rect);
             }
             canvas.present();
 
