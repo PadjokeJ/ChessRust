@@ -1,7 +1,3 @@
-use std::f32::DIGITS;
-
-use sdl2::sys::LineOnOffDash;
-
 enum Pieces {
     PAWN = 1,
     BISH = 2,
