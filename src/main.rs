@@ -4,7 +4,6 @@ use std::time::{Duration, Instant};
 use sdl2::event::Event;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use sdl2::sys::RetainPermanent;
 use sdl2::video::Window;
 use sdl2::{Sdl, VideoSubsystem};
 use sdl2::{keyboard::Keycode};
@@ -106,13 +105,24 @@ fn main() {
 
                 pick_up = false;
             }
-            if release && hand != 0{                
+            if release && hand != 0 {                
                 let x = mouse_coords.x as i32 / 80;
                 let y = mouse_coords.y as i32 / 80;
 
                 let index = (y * 8 + x) as usize;
+                let two_pow_index = 2u64.pow(index as u32);
+                println!("index: {:?}, twopow : {:?}", index, two_pow_index);
 
-                if is_white_turn == is_white(hand) && chess::is_legal(hand, original_index, index, &board.to_vec()) {
+                let mut legal = is_white_turn == is_white(hand) && chess::is_legal(hand, original_index, index, &board.to_vec());
+                
+                if hand & 7 == chess::Pieces::KING as i8 
+                && (two_pow_index & chess::generate_bit_board(&board, is_white_turn) == two_pow_index){
+                    legal = false;
+                    print!("did bitboard run, ");
+                }
+                println!("bitboard check : {}", (two_pow_index & chess::generate_bit_board(&board, is_white_turn)));
+
+                if legal {
                     board[index] = hand;
                     hand = 0;
                     is_white_turn = !is_white_turn;

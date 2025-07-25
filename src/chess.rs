@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-enum Pieces {
+pub enum Pieces {
     PAWN = 1,
     BISH = 2,
     KNIG = 3,
@@ -51,26 +51,27 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
             starting_rank = 6;
             dir = Directions::UP as i32;
         }
-        let mut index = (starting_index + dir) as usize;
-        if board[index] == 0 {
-            legal_moves.push(index);
+        let mut index = (starting_index + dir);
 
-            index = (starting_index + dir * 2) as usize;
-            if rank_of(starting_index as usize) == starting_rank && board[index] == 0 {
-                legal_moves.push(index);
+        if index >= 0 && board[index as usize] == 0 {
+            legal_moves.push(index as usize);
+
+            index = (starting_index + dir * 2);
+            if rank_of(starting_index as usize) == starting_rank && board[index as usize] == 0 {
+                legal_moves.push(index as usize);
             }
         }
-        index = (starting_index + dir + 1) as usize;
-        if (rank_of(index) == rank_of((starting_index + dir) as usize) && board[index] != 0 
-            && is_different_color(piece, board[index])) 
+        index = (starting_index + dir + 1);
+        if (rank_of(index as usize) == rank_of((starting_index + dir) as usize) && board[index as usize] != 0 
+            && is_different_color(piece, board[index as usize])) 
         || is_bit_board_calc{
-            legal_moves.push(index);
+            legal_moves.push(index as usize);
         }
-        index = (starting_index + dir - 1) as usize;
-        if (rank_of(index) == rank_of((starting_index + dir) as usize) && board[index] != 0 
-            && is_different_color(piece, board[index]))
+        index = (starting_index + dir - 1);
+        if index >= 0 && (rank_of(index as usize) == rank_of((starting_index + dir) as usize) && board[index as usize] != 0 
+            && is_different_color(piece, board[index as usize]))
         || is_bit_board_calc {
-            legal_moves.push(index);
+            legal_moves.push(index as usize);
         }
     }
     if piece_type == Pieces::BISH as i8 || piece_type == Pieces::QUEE as i8 {
@@ -106,7 +107,7 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
             let mut index = starting_index;
             while (0..8).contains(&rank_of(index as usize)) {
                 index += dir;
-                if index > 64 || index < 0 {
+                if index > 63 || index < 0 {
                     break;
                 }
                 if board[index as usize] != 0 {
@@ -215,7 +216,8 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
             let index = dir + starting_index;
             
             if (0..8).contains(&rank_of(index as usize)) 
-            && (file_of(starting_index as usize) - file_of(index as usize)).abs() <= 1 {
+            && (file_of(starting_index as usize) - file_of(index as usize)).abs() <= 1 
+            && index >= 0{
                 if board[index as usize] != 0 && is_different_color(piece, board[index as usize]) {
                     legal_moves.push(index as usize);
                 }
@@ -225,8 +227,9 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
             }
         }
     }
-
-    println!("legal indexes: {:?}", legal_moves);
+    if !is_bit_board_calc {
+        println!("legal indexes: {:?}", legal_moves);
+    }
     legal_moves
 }
 
@@ -243,13 +246,13 @@ pub fn generate_all_pseudolegal_moves(board: &Vec<i8>) -> HashMap<usize, Vec<usi
     legal_moves
 }
 
-pub fn generate_all_colored_pseudolegal_moves(board: &Vec<i8>, is_white_moves: bool) -> HashMap<usize, Vec<usize>>{
+pub fn generate_all_colored_pseudolegal_moves(board: &Vec<i8>, is_white_moves: bool, is_bit_board_calc: bool) -> HashMap<usize, Vec<usize>>{
     let mut legal_moves: HashMap<usize, Vec<usize>> = HashMap::new();
     let mut index = 0;
     for piece in board {
         if is_white_moves == is_white(*piece)
         {
-            legal_moves.insert(index as usize, generate_pseudolegal_moves(*piece, index, board, false));
+            legal_moves.insert(index as usize, generate_pseudolegal_moves(*piece, index, board, is_bit_board_calc));
         }
     }
     legal_moves
@@ -257,9 +260,18 @@ pub fn generate_all_colored_pseudolegal_moves(board: &Vec<i8>, is_white_moves: b
 
 pub fn generate_bit_board(board: &Vec<i8>, is_white_turn: bool) -> u64 {
     let is_white_bit_board = !is_white_turn;
-    let legal_moves = generate_all_colored_pseudolegal_moves(board, is_white_bit_board);
+    let all_legal_moves = generate_all_colored_pseudolegal_moves(board, is_white_bit_board, true);
+    let iter_moves = all_legal_moves.clone();
+    let mut bitboard: u64 = 0;
 
-    // set bitboard bit by using index^2, for each index in board
+    for move_index in iter_moves.into_keys() {
+        for moves in all_legal_moves[&move_index].clone() {
+            bitboard += 2u64.pow(moves as u32);
+            print!("{:?} : {:?}, ", moves, 2u64.pow(moves as u32));
+        }
+    }
 
-    0
+    println!("bitboard : {:?}", bitboard);
+
+    bitboard
 }
