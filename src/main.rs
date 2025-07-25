@@ -149,8 +149,6 @@ fn main() {
                 }
                 
             }
-            println!();
-
             canvas.present();
 
             let frame_delay = 1.0 / max_fps;
