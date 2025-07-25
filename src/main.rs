@@ -13,6 +13,8 @@ use sdl2::image::InitFlag;
 
 use vectors::v2::V2;
 
+use crate::chess::is_white;
+
 extern crate sdl2;
 
 mod vectors;
@@ -64,6 +66,9 @@ fn main() {
     let mut pick_up: bool = false;
     let mut release: bool = false;
     let mut hand: i8 = 0;
+    let mut original_index: usize = 0;
+
+    let mut is_white_turn = true;
 
     let mut delta_time: f32 = 0f32;
     let max_fps = 60.0;
@@ -95,18 +100,29 @@ fn main() {
                 let y = mouse_coords.y as i32 / 80;
 
                 let index = (y * 8 + x) as usize;
+                original_index = index;
                 hand = board[index];
                 board[index] = 0;
 
                 pick_up = false;
             }
-            if release {
+            if release && hand != 0{                
                 let x = mouse_coords.x as i32 / 80;
                 let y = mouse_coords.y as i32 / 80;
 
                 let index = (y * 8 + x) as usize;
-                board[index] = hand;
-                hand = 0;
+
+                if is_white_turn == is_white(hand) && chess::is_legal(hand, original_index, index, &board.to_vec()) {
+                    board[index] = hand;
+                    hand = 0;
+                    is_white_turn = !is_white_turn;
+                } else {
+                    board[original_index] = hand;
+                    hand = 0;
+                }
+
+
+                
 
                 release = false;
             }
