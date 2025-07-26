@@ -24,6 +24,12 @@ pub fn is_different_color(piece1: i8, piece2: i8) -> bool {
     is_white(piece1) != is_white(piece2)
 }
 
+pub fn is_sliding_piece(piece_type: i8) -> bool {
+    piece_type == Pieces::BISH as i8
+    || piece_type == Pieces::QUEE as i8
+    || piece_type == Pieces::ROOK as i8
+}
+
 pub fn is_white(piece: i8) -> bool {
     piece & 8 == 8
 }
@@ -99,132 +105,72 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
             }
         }
     }
-    if piece_type == Pieces::BISH as i8 || piece_type == Pieces::QUEE as i8 {
-        let mut dir_index = 0;
-        let dirs = vec![
-            Directions::UP as i32 + Directions::LEFT as i32, 
-            Directions::UP as i32 + Directions::RIGHT as i32, 
-            Directions::DOWN as i32 + Directions::LEFT as i32, 
-            Directions::DOWN as i32 + Directions::RIGHT as i32];
 
-        for dir in dirs {
-            let mut i = 1;
+    if is_sliding_piece(piece_type) {
+        let mut slide_dir: Vec<i32> = Vec::new();
 
-            while file_of((starting_index + dir * i) as usize) == file_of(starting_index as usize) + i * ((dir_index % 2) * 2 - 1) && (starting_index + dir * i) >= 0 && (starting_index + dir * i) < 64 {
-                let index = (starting_index + dir * i) as usize;
-                if board[index] != 0 {
-                    if is_different_color(piece, board[index]) {
-                        legal_moves.push(index);
-                    }
-                    if !is_bit_board_calc && board[index] & 7 == Pieces::KING as i8{
-                        break;
-                    }
-                }
-                legal_moves.push(index);
-                i += 1;
-            }
-            dir_index += 1;
+        if piece_type == Pieces::BISH as i8 || piece_type == Pieces::QUEE as i8 {
+            slide_dir.push(Directions::UP as i32 + Directions::RIGHT as i32);
+            slide_dir.push(Directions::UP as i32 + Directions::LEFT as i32);
+            slide_dir.push(Directions::DOWN as i32 + Directions::RIGHT as i32);
+            slide_dir.push(Directions::DOWN as i32 + Directions::LEFT as i32);
         }
-    }
+        if piece_type == Pieces::ROOK as i8 || piece_type == Pieces::QUEE as i8 {
+            slide_dir.push(Directions::UP as i32);
+            slide_dir.push(Directions::LEFT as i32);
+            slide_dir.push(Directions::RIGHT as i32);
+            slide_dir.push(Directions::DOWN as i32);
+        }
 
-    if piece_type == Pieces::ROOK as i8 || piece_type == Pieces::QUEE as i8 {
-        for dir in vec![Directions::UP as i32, Directions::DOWN as i32] {
-            let mut index = starting_index;
-            while (0..8).contains(&rank_of(index as usize)) {
-                index += dir;
-                if index > 63 || index < 0 {
+        let starting_rank = rank_of(starting_index as usize);
+        let starting_file = file_of(starting_index as usize);
+
+        for dir in slide_dir {
+            let dir_rank = if dir.abs() == 1 { 0 } else if dir < -6 { -1 } else { 1 };
+            let dir_file = if dir.abs() == 8 { 0 } else if dir.abs() == 7 { -1 } else { 1 };
+            let mut rank = dir_rank + starting_rank;
+            let mut file = dir_file + starting_file;
+
+            'slide: loop {
+                if !in_bounds(file, rank) {
                     break;
                 }
-                if board[index as usize] != 0 {
-                    if is_different_color(piece, board[index as usize]) {
-                        legal_moves.push(index as usize);
+                if is_empty(board, file, rank) {
+                    legal_moves.push(index_of(file, rank));
+                } else {
+                    if is_enemy(board, piece_is_white, file, rank) || is_bit_board_calc {
+                        legal_moves.push(index_of(file, rank));
                     }
-                    if !is_bit_board_calc && board[index as usize] & 7 == Pieces::KING as i8{
-                        break;
-                    }
+                    break 'slide;
                 }
-                legal_moves.push(index as usize);
-                
+                rank += dir_rank;
+                file += dir_file;
             }
         }
-        for dir in vec![Directions::LEFT as i32, Directions::RIGHT as i32] {
-            let mut index = starting_index + dir;
-            while rank_of(index as usize) == rank_of(starting_index as usize) {
-                if index < 0 || index >= 64 {
-                    break;
-                }
-                if board[index as usize] != 0 {
-                    if is_different_color(piece, board[index as usize]) {
-                        legal_moves.push(index as usize);
-                    }
-                    if !is_bit_board_calc && board[index as usize] & 7 == Pieces::KING as i8{
-                        break;
-                    }
-                }
-                legal_moves.push(index as usize);
-                index += dir;
-            }
-        }    
     }
 
     if piece_type == Pieces::KNIG as i8 {
-        if file_of(starting_index as usize) > 0 {
-            if rank_of(starting_index as usize) > 1 {
-                let index = (Directions::UP as i32 * 2 + Directions::LEFT as i32 + starting_index) as usize;
-                if board[index] == 0 || is_different_color(piece, board[index]) {
-                    legal_moves.push(index);
-                }
-            }
-            if rank_of(starting_index as usize) < 6 {
-                let index = (Directions::DOWN as i32 * 2 + Directions::LEFT as i32 + starting_index) as usize;
-                if board[index] == 0 || is_different_color(piece, board[index]) {
-                    legal_moves.push(index);
-                }
-            }
-            if file_of(starting_index as usize) > 1 {
-                if rank_of(starting_index as usize) > 1 {
-                    let index = (Directions::UP as i32 + Directions::LEFT as i32 * 2 + starting_index) as usize;
-                    if board[index] == 0 || is_different_color(piece, board[index]) {
-                        legal_moves.push(index);
-                    }
-                }
-                if rank_of(starting_index as usize) < 6 {
-                    let index = (Directions::DOWN as i32 + Directions::LEFT as i32 * 2 + starting_index) as usize;
-                    if board[index] == 0 || is_different_color(piece, board[index]) {
-                        legal_moves.push(index);
-                    }
-                }
-            }
-        }
-        if file_of(starting_index as usize) < 7 {
-            if rank_of(starting_index as usize) > 1 {
-                let index = (Directions::UP as i32 * 2 + Directions::RIGHT as i32 + starting_index) as usize;
-                if board[index] == 0 || is_different_color(piece, board[index]) {
-                    legal_moves.push(index);
-                }
-            }
-            if rank_of(starting_index as usize) < 6 {
-                let index = (Directions::DOWN as i32 * 2 + Directions::RIGHT as i32 + starting_index) as usize;
-                if board[index] == 0 || is_different_color(piece, board[index]) {
-                    legal_moves.push(index);
-                }
-            }
-            if file_of(starting_index as usize) < 6 {
-                if rank_of(starting_index as usize) > 1 {
-                    let index = (Directions::UP as i32 + Directions::RIGHT as i32 * 2 + starting_index) as usize;
-                    if board[index] == 0 || is_different_color(piece, board[index]) {
-                        legal_moves.push(index);
-                    }
-                }
-                if rank_of(starting_index as usize) < 6 {
-                    let index = (Directions::DOWN as i32 + Directions::RIGHT as i32 * 2 + starting_index) as usize;
-                    if board[index] == 0 || is_different_color(piece, board[index]) {
-                        legal_moves.push(index);
-                    }
+        let hops_rank = vec![-2, -1, 1, 2];
+        let hops_file = vec![-1, -2, -2, -1];
+
+        let start_rank = rank_of(starting_index as usize);
+        let start_file = file_of(starting_index as usize);
+
+        let mut rank = start_rank;
+        let mut file = start_file;
+
+        for i in [-1, 1] {
+            for k in 0..4 {
+                rank = start_rank + hops_rank[k];
+                file = start_file + hops_file[k] * i;
+
+                if is_empty_or_enemy(board.to_vec(), piece_is_white, file, rank) {
+                    push_if_inbounds(&mut legal_moves, file, rank);
                 }
             }
         }
     }
+
     if piece_type == Pieces::KING as i8 {
         let dirs = [
             Directions::UP as i32,
