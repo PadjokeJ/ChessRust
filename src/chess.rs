@@ -156,13 +156,10 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
         let start_rank = rank_of(starting_index as usize);
         let start_file = file_of(starting_index as usize);
 
-        let mut rank = start_rank;
-        let mut file = start_file;
-
         for i in [-1, 1] {
             for k in 0..4 {
-                rank = start_rank + hops_rank[k];
-                file = start_file + hops_file[k] * i;
+                let rank = start_rank + hops_rank[k];
+                let file = start_file + hops_file[k] * i;
 
                 if is_empty_or_enemy(board.to_vec(), piece_is_white, file, rank) {
                     push_if_inbounds(&mut legal_moves, file, rank);
@@ -196,9 +193,6 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
             }
         }
     }
-    if !is_bit_board_calc {
-        println!("legal indexes: {:?}", legal_moves);
-    }
     legal_moves
 }
 
@@ -216,8 +210,6 @@ pub fn generate_bit_board(board: &Vec<i8>, is_white_turn: bool) -> u64 {
         i += 1;
     }
 
-    println!("bitboard : {:#b}", bitboard);
-
     bitboard
 }
 
@@ -230,10 +222,6 @@ pub fn generate_legal_moves(piece: i8, starting_index: i32, board: &Vec<i8>, bit
             && !is_different_color(*id, piece))
         .unwrap_or(999); // if no king on board then it is in hand
     
-    println!("king index : {:?}", king_index);
-    
-    // VVVVV PSEUDO CODE VVVVV
-    // if king not in hand and threatened
     if king_index != 999 && 2u64.pow(king_index as u32) & bitboard != 0 {
         let mut i = 0;
 
@@ -254,8 +242,6 @@ pub fn generate_legal_moves(piece: i8, starting_index: i32, board: &Vec<i8>, bit
             }
         }
     }
-    // then remove moves which keep the king threatened
-    // by regenerating moves after piece move?
 
     // if king in hand
     if piece & 7 == Pieces::KING as i8 {

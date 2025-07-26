@@ -25,14 +25,9 @@ mod chess;
 fn main() {
     let debug_bitboard = false;
 
-
     let mut board: Vec<i8> = fen::translate_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR".to_string());
 
-    let mut en_passant: bool = false;
     let mut en_passant_index: usize = 999;
-
-    println!("{:?}", board);
-
 
     let res: (u32, u32) = (640, 640);
 
@@ -149,16 +144,8 @@ fn main() {
 
                 if chess::in_bounds(x, y) {
                     let index = chess::index_of(x, y) as usize;
-                    let two_pow_index = 2u64.pow(index as u32);
-                    println!("index: {:?}, twopow : {:#b}", index, two_pow_index);
 
-                    let mut legal = is_white_turn == is_white(hand) && legal_piece_moves.contains(&index);
-                    
-                    /*if hand & 7 == chess::Pieces::KING as i8 
-                    && (two_pow_index & chess::generate_bit_board(&board, is_white_turn) == two_pow_index){
-                        legal = false;
-                        print!("did bitboard run, ");
-                    }*/
+                    let legal = is_white_turn == is_white(hand) && legal_piece_moves.contains(&index);
 
                     if legal 
                     && index != original_index{
@@ -218,7 +205,7 @@ fn main() {
 
             for i in 0..64 {
                 if board[i] != 0 {
-                    let mut texture;
+                    let texture;
 
                     if chess::is_white(board[i]){
                         let index = board[i] as usize - 9;
@@ -250,7 +237,7 @@ fn main() {
             }
 
             if hand != 0 {
-                let mut texture;
+                let texture;
 
                 if chess::is_white(hand){
                     let index = hand as usize - 9;
