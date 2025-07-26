@@ -122,7 +122,7 @@ fn main() {
                 }
                 println!("bitboard check : {}", (two_pow_index & chess::generate_bit_board(&board, is_white_turn)));
 
-                if legal {
+                if legal && index != original_index{
                     board[index] = hand;
                     hand = 0;
                     is_white_turn = !is_white_turn;

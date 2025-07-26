@@ -16,6 +16,10 @@ enum Directions {
     RIGHT = 1,
 }
 
+pub fn xy_dir(direction: i32) -> i32 {
+    direction.abs() / direction
+}
+
 pub fn is_different_color(piece1: i8, piece2: i8) -> bool {
     is_white(piece1) != is_white(piece2)
 }
@@ -24,54 +28,75 @@ pub fn is_white(piece: i8) -> bool {
     piece & 8 == 8
 }
 
-pub fn file_of(index: usize) -> i32{
+pub fn file_of(index: usize) -> i32 {
     let i = index as i32;
 
     i % 8
 }
 
-pub fn rank_of(index: usize) -> i32{
+pub fn rank_of(index: usize) -> i32 {
     let i = index as i32;
 
     i / 8
 }
 
-pub fn norm_of_direction(dir: i32) -> i32 {
-    dir.abs() / dir
+pub fn index_of(file: i32, rank: i32) -> usize {
+    (8 * rank + file) as usize
+}
+
+pub fn in_bounds(file: i32, rank: i32) -> bool {
+    file < 8 && file >= 0 && rank < 8 && rank >= 0
+}
+
+pub fn is_empty(board: &Vec<i8>, file: i32, rank: i32) -> bool {
+    in_bounds(file, rank) && board[index_of(file, rank)] == 0
+}
+
+pub fn is_enemy(board: &Vec<i8>, white: bool, file: i32, rank: i32) -> bool {
+    in_bounds(file, rank)
+    && !is_empty(board, file, rank)
+    && is_white(board[index_of(file, rank)]) != white
+}
+
+pub fn is_empty_or_enemy(board: Vec<i8>, white: bool, file: i32, rank: i32) -> bool {
+    is_empty(&board, file, rank) 
+    || is_enemy(&board, white, file, rank)
+}
+
+pub fn push_if_inbounds(legal_moves: &mut Vec<usize>, file: i32, rank: i32) {
+    if in_bounds(file, rank) {
+        legal_moves.push(index_of(file.clone(), rank.clone()));
+    }
 }
 
 pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8>, is_bit_board_calc: bool) -> Vec<usize> {
     let mut legal_moves: Vec<usize> = Vec::new();
     let piece_type = piece & 7;
+    let piece_is_white = is_white(piece);
 
     if piece_type == Pieces::PAWN as i8 {
         let mut starting_rank = 1;
         let mut dir = Directions::DOWN as i32;
-        if is_white(piece) {
+        if piece_is_white {
             starting_rank = 6;
             dir = Directions::UP as i32;
         }
-        let mut index = (starting_index + dir);
+        let x = file_of(starting_index as usize);
+        let y = rank_of(starting_index as usize);
+        let mut y_move = y + xy_dir(dir);
 
-        if index >= 0 && board[index as usize] == 0 {
-            legal_moves.push(index as usize);
+        if is_empty(board, x, y_move) && !is_bit_board_calc {
+            push_if_inbounds(&mut legal_moves, x, y_move);
 
-            index = (starting_index + dir * 2);
-            if rank_of(starting_index as usize) == starting_rank && board[index as usize] == 0 {
-                legal_moves.push(index as usize);
+            if starting_rank == y {
+                y_move = y + (2 * xy_dir(dir));
+                push_if_inbounds(&mut legal_moves, x, y_move);
             }
         }
-        index = (starting_index + dir + 1);
-        if (rank_of(index as usize) == rank_of((starting_index + dir) as usize) && board[index as usize] != 0 
-            && is_different_color(piece, board[index as usize])) 
-        || is_bit_board_calc{
-            legal_moves.push(index as usize);
-        }
-        index = (starting_index + dir - 1);
-        if index >= 0 && (rank_of(index as usize) == rank_of((starting_index + dir) as usize) && board[index as usize] != 0 
-            && is_different_color(piece, board[index as usize]))
-        || is_bit_board_calc {
-            legal_moves.push(index as usize);
+        for x_dir in vec![-1, 1] {
+            if is_enemy(board, piece_is_white, x + x_dir, y + xy_dir(dir)) || is_bit_board_calc {
+                push_if_inbounds(&mut legal_moves, x + x_dir, y + xy_dir(dir));
+            }
         }
     }
     if piece_type == Pieces::BISH as i8 || piece_type == Pieces::QUEE as i8 {
