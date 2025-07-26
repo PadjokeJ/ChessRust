@@ -231,25 +231,48 @@ pub fn generate_legal_moves(piece: i8, starting_index: i32, board: &Vec<i8>, bit
         .unwrap_or(999); // if no king on board then it is in hand
     
     println!("king index : {:?}", king_index);
-
+    
+    // VVVVV PSEUDO CODE VVVVV
+    // if king not in hand and threatened
     if king_index != 999 && 2u64.pow(king_index as u32) & bitboard != 0 {
-        pseudo_legal_moves.clear();
-        println!("check in : {:#b}", 2u64.pow(king_index as u32) & bitboard);
-        return pseudo_legal_moves;
-    }
-
-    if king_index == 999 {
         let mut i = 0;
-        'checker: loop {
-            let current_move = pseudo_legal_moves[i];
 
-            if 2u64.pow(current_move as u32) & bitboard == 0 {
+        'checker: loop {
+            if i >= pseudo_legal_moves.len() {
+                break 'checker;
+            }
+
+            let current_move = pseudo_legal_moves[i];
+            let mut board_after = board.clone();
+            board_after[current_move] = piece;
+
+            let bboard = generate_bit_board(&board_after, is_white(piece));
+            if 2u64.pow(king_index as u32) & bboard != 0 {
                 pseudo_legal_moves.remove(i);
             } else {
                 i += 1;
             }
-            if i >= pseudo_legal_moves.len() || pseudo_legal_moves.len() == 0{
-                break 'checker;
+        }
+    }
+    // then remove moves which keep the king threatened
+    // by regenerating moves after piece move?
+
+    // if king in hand
+    if piece & 7 == Pieces::KING as i8 {
+        // so legal moves we are looking at are the king moves
+
+        let mut i = 0;
+        'checker: loop {
+            let current_move = pseudo_legal_moves[i];
+
+            // if current move in bit board, remove it
+            if 2u64.pow(current_move as u32) & bitboard != 0 {
+                pseudo_legal_moves.remove(i);
+            } else {
+                i += 1;
+            }
+            if i >= pseudo_legal_moves.len() {
+                break 'checker; 
             }
         }
     }
