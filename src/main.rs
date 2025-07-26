@@ -12,7 +12,7 @@ use sdl2::image::InitFlag;
 
 use vectors::v2::V2;
 
-use crate::chess::is_white;
+use crate::chess::{file_of, is_white, rank_of};
 
 extern crate sdl2;
 
@@ -69,6 +69,8 @@ fn main() {
 
     let mut is_white_turn = true;
 
+    let mut legal_piece_moves: Vec<usize> = Vec::new();
+
     let mut delta_time: f32 = 0f32;
     let max_fps = 60.0;
 
@@ -103,38 +105,43 @@ fn main() {
                 hand = board[index];
                 board[index] = 0;
 
+                if hand != 0 {
+                    legal_piece_moves = chess::generate_pseudolegal_moves(hand, original_index as i32, &board, false);
+                }
+
                 pick_up = false;
             }
             if release && hand != 0 {                
                 let x = mouse_coords.x as i32 / 80;
                 let y = mouse_coords.y as i32 / 80;
 
-                let index = (y * 8 + x) as usize;
-                let two_pow_index = 2u64.pow(index as u32);
-                println!("index: {:?}, twopow : {:?}", index, two_pow_index);
+                if chess::in_bounds(x, y) {
+                    let index = chess::index_of(x, y) as usize;
+                    let two_pow_index = 2u64.pow(index as u32);
+                    println!("index: {:?}, twopow : {:?}", index, two_pow_index);
 
-                let mut legal = is_white_turn == is_white(hand) && chess::is_legal(hand, original_index, index, &board.to_vec());
-                
-                if hand & 7 == chess::Pieces::KING as i8 
-                && (two_pow_index & chess::generate_bit_board(&board, is_white_turn) == two_pow_index){
-                    legal = false;
-                    print!("did bitboard run, ");
+                    let mut legal = is_white_turn == is_white(hand) && legal_piece_moves.contains(&index);
+                    
+                    if hand & 7 == chess::Pieces::KING as i8 
+                    && (two_pow_index & chess::generate_bit_board(&board, is_white_turn) == two_pow_index){
+                        legal = false;
+                        print!("did bitboard run, ");
+                    }
+
+                    if legal 
+                    && index != original_index{
+                        board[index] = hand;
+                        hand = 0;
+                        is_white_turn = !is_white_turn;
+                    } else {
+                        board[original_index] = hand;
+                        hand = 0;
+                    }
+
+                    legal_piece_moves.clear();
+
+                    release = false;
                 }
-                println!("bitboard check : {}", (two_pow_index & chess::generate_bit_board(&board, is_white_turn)));
-
-                if legal && index != original_index{
-                    board[index] = hand;
-                    hand = 0;
-                    is_white_turn = !is_white_turn;
-                } else {
-                    board[original_index] = hand;
-                    hand = 0;
-                }
-
-
-                
-
-                release = false;
             }
 
 
@@ -176,7 +183,6 @@ fn main() {
 
                     _ = canvas.copy(texture, src_rect, dest_rect);
                 }
-                
             }
 
             if hand != 0 {
@@ -197,6 +203,17 @@ fn main() {
 
                 _ = canvas.copy(texture, src_rect, dest_rect);
             }
+
+            for i in 0..64 {
+                if legal_piece_moves.contains(&(i as usize)) {
+                    canvas.set_draw_color(Color::RGB(8, 20, 30));
+
+                    let legal_indicator = Rect::new(file_of(i as usize) * 80 + 30, rank_of(i as usize) * 80 + 30, 20, 20);
+
+                    _ = canvas.fill_rect(legal_indicator);
+                }
+            }
+
             canvas.present();
 
             let frame_delay = 1.0 / max_fps;
