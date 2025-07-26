@@ -185,6 +185,18 @@ fn main() {
                 }
             }
 
+            for i in 0..64 {
+                if legal_piece_moves.contains(&(i as usize)) {
+                    let legal_indicator = Rect::new(file_of(i as usize) * 80 + 30, rank_of(i as usize) * 80 + 30, 20, 20);
+                    let outline = Rect::new(file_of(i as usize) * 80 + 25, rank_of(i as usize) * 80 + 25, 30, 30);
+
+                    canvas.set_draw_color(Color::RGB(8, 20, 30));
+                    _ = canvas.fill_rect(outline);
+                    canvas.set_draw_color(Color::RGB(153, 117, 119));
+                    _ = canvas.fill_rect(legal_indicator);
+                }
+            }
+
             if hand != 0 {
                 let mut texture;
 
@@ -202,16 +214,6 @@ fn main() {
                 let dest_rect = Rect::new(mouse_coords.x as i32 - 48, mouse_coords.y as i32 - 48, 96, 96);
 
                 _ = canvas.copy(texture, src_rect, dest_rect);
-            }
-
-            for i in 0..64 {
-                if legal_piece_moves.contains(&(i as usize)) {
-                    canvas.set_draw_color(Color::RGB(8, 20, 30));
-
-                    let legal_indicator = Rect::new(file_of(i as usize) * 80 + 30, rank_of(i as usize) * 80 + 30, 20, 20);
-
-                    _ = canvas.fill_rect(legal_indicator);
-                }
             }
 
             canvas.present();
