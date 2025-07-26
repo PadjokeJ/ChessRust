@@ -127,7 +127,7 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
 
         for dir in slide_dir {
             let dir_rank = if dir.abs() == 1 { 0 } else if dir < -6 { -1 } else { 1 };
-            let dir_file = if dir.abs() == 8 { 0 } else if dir.abs() == 7 { -1 } else { 1 };
+            let dir_file = if dir.abs() == 8 { 0 } else if dir.abs() == 7 || dir == -1 { -1 } else { 1 };
             let mut rank = dir_rank + starting_rank;
             let mut file = dir_file + starting_file;
 
@@ -185,11 +185,13 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
         
         for dir in dirs {
             let dir_rank = if dir.abs() == 1 { 0 } else if dir < -6 { -1 } else { 1 };
-            let dir_file = if dir.abs() == 8 { 0 } else if dir.abs() == 7 { -1 } else { 1 };
+            let dir_file = if dir.abs() == 8 { 0 } else if dir.abs() == 7 || dir == -1 { -1 } else { 1 };
             let rank = dir_rank + rank_of(starting_index as usize);
             let file = dir_file + file_of(starting_index as usize);
 
             if is_empty_or_enemy(board.to_vec(), piece_is_white, file, rank) {
+                push_if_inbounds(&mut legal_moves, file, rank);
+            } else if is_bit_board_calc && !is_empty_or_enemy(board.to_vec(), piece_is_white, file, rank) {
                 push_if_inbounds(&mut legal_moves, file, rank);
             }
         }

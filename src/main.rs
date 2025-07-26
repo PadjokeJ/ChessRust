@@ -20,7 +20,10 @@ mod vectors;
 mod fen;
 mod chess;
 
-fn main() {    
+fn main() {
+    let debug_bitboard = true;
+
+
     let mut board: Vec<i8> = fen::translate_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR".to_string());
 
     println!("{:?}", board);
@@ -70,6 +73,7 @@ fn main() {
     let mut is_white_turn = true;
 
     let mut legal_piece_moves: Vec<usize> = Vec::new();
+    let mut bitboard: u64 = 0;
 
     let mut delta_time: f32 = 0f32;
     let max_fps = 60.0;
@@ -107,6 +111,7 @@ fn main() {
 
                 if hand != 0 {
                     legal_piece_moves = chess::generate_pseudolegal_moves(hand, original_index as i32, &board, false);
+                    bitboard = chess::generate_bit_board(&board, is_white_turn);
                 }
 
                 pick_up = false;
@@ -122,11 +127,11 @@ fn main() {
 
                     let mut legal = is_white_turn == is_white(hand) && legal_piece_moves.contains(&index);
                     
-                    if hand & 7 == chess::Pieces::KING as i8 
+                    /*if hand & 7 == chess::Pieces::KING as i8 
                     && (two_pow_index & chess::generate_bit_board(&board, is_white_turn) == two_pow_index){
                         legal = false;
                         print!("did bitboard run, ");
-                    }
+                    }*/
 
                     if legal 
                     && index != original_index{
@@ -155,12 +160,16 @@ fn main() {
                     80,
                     80
                 );
-                if i % 2 + (i / 8) % 2 == 1 {
-                    canvas.set_draw_color(Color::RGB(78, 73, 95));
-                } else {
-                    canvas.set_draw_color(Color::RGB(246, 214, 189));
-                }
+
+                let mut color = if i % 2 + (i / 8) % 2 == 1 { Color::RGB(78, 73, 95) } 
+                    else { Color::RGB(246, 214, 189) };
                 
+                if 2u64.pow(i as u32) & bitboard != 0 && debug_bitboard {
+                    color = Color::RGB(255, color.g / 4, color.b / 4);
+                }
+
+                canvas.set_draw_color(color);
+
                 _ = canvas.fill_rect(r);
             }
 
