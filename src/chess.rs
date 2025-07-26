@@ -94,7 +94,7 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
         if is_empty(board, x, y_move) && !is_bit_board_calc {
             push_if_inbounds(&mut legal_moves, x, y_move);
 
-            if starting_rank == y {
+            if starting_rank == y && is_empty(board, x, y + 2 * xy_dir(dir)){
                 y_move = y + (2 * xy_dir(dir));
                 push_if_inbounds(&mut legal_moves, x, y_move);
             }
@@ -219,4 +219,40 @@ pub fn generate_bit_board(board: &Vec<i8>, is_white_turn: bool) -> u64 {
     println!("bitboard : {:#b}", bitboard);
 
     bitboard
+}
+
+pub fn generate_legal_moves(piece: i8, starting_index: i32, board: &Vec<i8>, bitboard: u64) -> Vec<usize> {
+    let mut pseudo_legal_moves = generate_pseudolegal_moves(piece, starting_index, board, false);
+
+    let king_index = board.iter()
+        .position( |id| 
+            id & 7 == Pieces::KING as i8 
+            && !is_different_color(*id, piece))
+        .unwrap_or(999); // if no king on board then it is in hand
+    
+    println!("king index : {:?}", king_index);
+
+    if king_index != 999 && 2u64.pow(king_index as u32) & bitboard != 0 {
+        pseudo_legal_moves.clear();
+        println!("check in : {:#b}", 2u64.pow(king_index as u32) & bitboard);
+        return pseudo_legal_moves;
+    }
+
+    if king_index == 999 {
+        let mut i = 0;
+        'checker: loop {
+            let current_move = pseudo_legal_moves[i];
+
+            if 2u64.pow(current_move as u32) & bitboard == 0 {
+                pseudo_legal_moves.remove(i);
+            } else {
+                i += 1;
+            }
+            if i >= pseudo_legal_moves.len() || pseudo_legal_moves.len() == 0{
+                break 'checker;
+            }
+        }
+    }
+    
+    pseudo_legal_moves
 }

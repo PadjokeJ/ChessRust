@@ -110,8 +110,8 @@ fn main() {
                 board[index] = 0;
 
                 if hand != 0 {
-                    legal_piece_moves = chess::generate_pseudolegal_moves(hand, original_index as i32, &board, false);
                     bitboard = chess::generate_bit_board(&board, is_white_turn);
+                    legal_piece_moves = chess::generate_legal_moves(hand, original_index as i32, &board, bitboard);
                 }
 
                 pick_up = false;
@@ -123,7 +123,7 @@ fn main() {
                 if chess::in_bounds(x, y) {
                     let index = chess::index_of(x, y) as usize;
                     let two_pow_index = 2u64.pow(index as u32);
-                    println!("index: {:?}, twopow : {:?}", index, two_pow_index);
+                    println!("index: {:?}, twopow : {:#b}", index, two_pow_index);
 
                     let mut legal = is_white_turn == is_white(hand) && legal_piece_moves.contains(&index);
                     
