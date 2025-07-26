@@ -184,17 +184,13 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
         ];
         
         for dir in dirs {
-            let index = dir + starting_index;
-            
-            if (0..8).contains(&rank_of(index as usize)) 
-            && (file_of(starting_index as usize) - file_of(index as usize)).abs() <= 1 
-            && index >= 0{
-                if board[index as usize] != 0 && is_different_color(piece, board[index as usize]) {
-                    legal_moves.push(index as usize);
-                }
-                if board[index as usize] == 0 {
-                    legal_moves.push(index as usize);
-                }
+            let dir_rank = if dir.abs() == 1 { 0 } else if dir < -6 { -1 } else { 1 };
+            let dir_file = if dir.abs() == 8 { 0 } else if dir.abs() == 7 { -1 } else { 1 };
+            let rank = dir_rank + rank_of(starting_index as usize);
+            let file = dir_file + file_of(starting_index as usize);
+
+            if is_empty_or_enemy(board.to_vec(), piece_is_white, file, rank) {
+                push_if_inbounds(&mut legal_moves, file, rank);
             }
         }
     }
@@ -202,10 +198,6 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
         println!("legal indexes: {:?}", legal_moves);
     }
     legal_moves
-}
-
-pub fn is_legal(piece: i8, starting_index: usize, ending_index: usize, board: &Vec<i8>) -> bool {
-    generate_pseudolegal_moves(piece, starting_index as i32, board, false).contains(&ending_index)
 }
 
 pub fn generate_all_pseudolegal_moves(board: &Vec<i8>) -> HashMap<usize, Vec<usize>> {
