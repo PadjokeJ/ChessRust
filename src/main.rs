@@ -10,6 +10,8 @@ use sdl2::{keyboard::Keycode};
 use sdl2::image::LoadTexture;
 use sdl2::image::InitFlag;
 
+use std::cmp::min;
+
 use vectors::v2::V2;
 
 use crate::chess::{file_of, index_of, is_white, rank_of, Pieces};
@@ -62,6 +64,8 @@ fn main() {
         texture_creator.load_texture("src/images/w_king.png").ok().unwrap()
     ];
 
+    let promotion_texture = texture_creator.load_texture("src/images/promotion.png").ok().unwrap();
+
     canvas.clear();
     canvas.present();
 
@@ -74,11 +78,18 @@ fn main() {
     let mut original_index: usize = 0;
 
     let mut is_white_turn = true;
+    let mut pawn_promoting = false;
+    let mut promotion_index = 0;
+    let promotion_choices = [Pieces::BISH as i8, Pieces::KNIG as i8, Pieces::ROOK as i8, Pieces::QUEE as i8];
+    let mut promoted_into;
+    let mut promotion_box_x = 0;
+    let mut promotion_box_y = 0;
+
 
     let mut legal_piece_moves: Vec<usize> = Vec::new();
     let mut bitboard: u64 = 0;
 
-    let mut delta_time: f32 = 0f32;
+    let mut delta_time: f32;
     let max_fps = 60.0;
 
     'main: loop {
@@ -96,10 +107,23 @@ fn main() {
                     mouse_coords.y = y as f32;
                 }
                 Event::MouseButtonDown { .. } => {
-                    pick_up = true;
+                    pick_up = !pawn_promoting; // makes sure you can't pickup a piece when you're promoting
                 }
                 Event::MouseButtonUp { .. } => {
-                    release = true;
+                    if pawn_promoting {
+                        if mouse_coords.x as i32 >= promotion_box_x
+                        && mouse_coords.x as i32 <= promotion_box_x + 320
+                        && mouse_coords.y as i32 >= promotion_box_y + 35
+                        && mouse_coords.y as i32 <= promotion_box_y + 120 {
+                            let choice_index = (mouse_coords.x as i32 - promotion_box_x) / 80;
+                            promoted_into = promotion_choices[choice_index as usize];
+
+                            board[promotion_index] = promoted_into + if !is_white_turn { 8 } else { 0 };
+                            pawn_promoting = false;
+                        }
+                    } else {
+                        release = true;
+                    }
                 }
                 _ => (),
             }
@@ -142,14 +166,16 @@ fn main() {
                             if index == en_passant_index {
                                 board[index_of(file_of(en_passant_index), rank_of(original_index))] = 0;
                             }
-                            en_passant = false;
                             en_passant_index = 999;
                             if is_white(hand) && rank_of(original_index) - 2 == rank_of(index) {
                                 en_passant_index = original_index - 8;
-                                en_passant = true;
                             } else if !is_white(hand) && rank_of(original_index) + 2 == rank_of(index) {
                                 en_passant_index = original_index + 8;
-                                en_passant = true;
+                            }
+
+                            if rank_of(index) == 0 || rank_of(index) == 7 {
+                                promotion_index = index;
+                                pawn_promoting = true;
                             }
                         }
                         board[index] = hand;
@@ -240,6 +266,25 @@ fn main() {
                 let dest_rect = Rect::new(mouse_coords.x as i32 - 48, mouse_coords.y as i32 - 48, 96, 96);
 
                 _ = canvas.copy(texture, src_rect, dest_rect);
+            }
+            if pawn_promoting {
+                let attributes = promotion_texture.query();
+                let src_rect = Rect::new(0, 0, attributes.width, attributes.height);
+                promotion_box_x = min(file_of(promotion_index) * 80, 310);
+                promotion_box_y = min(rank_of(promotion_index) * 80, 520);
+                let dest_rect = Rect::new(promotion_box_x - 5, promotion_box_y, 330, 120);
+
+                _ = canvas.copy(&promotion_texture, src_rect, dest_rect);
+
+                for i in 0..4 {
+                    let texture = if !is_white_turn { &w_pieces[promotion_choices[i] as usize - 1] } else { &b_pieces[promotion_choices[i] as usize - 1] };
+
+                    let attributes = texture.query();
+                    let src = Rect::new(0, 0, attributes.width, attributes.height);
+                    let dst = Rect::new(dest_rect.x + 5 + i as i32 * 80, dest_rect.y + 35, attributes.width * 5, attributes.height * 5);
+
+                    _ = canvas.copy(texture, src, dst);
+                }
             }
 
             canvas.present();
