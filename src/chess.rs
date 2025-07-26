@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 
 pub enum Pieces {
     PAWN = 1,
@@ -249,6 +251,9 @@ pub fn generate_legal_moves(piece: i8, starting_index: i32, board: &Vec<i8>, bit
 
         let mut i = 0;
         'checker: loop {
+            if i >= pseudo_legal_moves.len() {
+                break 'checker; 
+            }
             let current_move = pseudo_legal_moves[i];
 
             // if current move in bit board, remove it
@@ -257,11 +262,33 @@ pub fn generate_legal_moves(piece: i8, starting_index: i32, board: &Vec<i8>, bit
             } else {
                 i += 1;
             }
-            if i >= pseudo_legal_moves.len() {
-                break 'checker; 
-            }
         }
     }
     
     pseudo_legal_moves
+}
+
+pub fn generate_all_legal_moves(white_turn: bool, board: &Vec<i8>, bitboard: u64, en_passant_index: usize) -> HashMap<usize, Vec<usize>>{
+    let mut legal_moves: HashMap<usize, Vec<usize>> = HashMap::new();
+    
+    let mut i = 0;
+    for piece in board.to_vec() {
+        if piece != 0 && is_white(piece) == white_turn {
+            legal_moves.insert(i, generate_legal_moves(piece, i as i32, board, bitboard, en_passant_index));
+        }
+        i += 1;
+    }
+    legal_moves
+}
+
+pub fn checkmate(white_turn: bool, board: &Vec<i8>, bitboard: u64, en_passant_index: usize) -> bool {
+    let legal_moves = generate_all_legal_moves(white_turn, board, bitboard, en_passant_index);
+
+    for piece in legal_moves.clone().keys() {
+        if legal_moves[piece].len() != 0 {
+            return false;
+        }
+    }
+
+    true
 }
