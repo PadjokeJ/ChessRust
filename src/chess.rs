@@ -202,41 +202,21 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
     legal_moves
 }
 
-pub fn generate_all_pseudolegal_moves(board: &Vec<i8>) -> HashMap<usize, Vec<usize>> {
-    let mut legal_moves: HashMap<usize, Vec<usize>> = HashMap::new();
-    let mut index = 0;
-    for piece in board {
-        legal_moves.insert(index as usize, generate_pseudolegal_moves(*piece, index, board, false));
-    }
-    legal_moves
-}
-
-pub fn generate_all_colored_pseudolegal_moves(board: &Vec<i8>, is_white_moves: bool, is_bit_board_calc: bool) -> HashMap<usize, Vec<usize>>{
-    let mut legal_moves: HashMap<usize, Vec<usize>> = HashMap::new();
-    let mut index = 0;
-    for piece in board {
-        if is_white_moves == is_white(*piece)
-        {
-            legal_moves.insert(index as usize, generate_pseudolegal_moves(*piece, index, board, is_bit_board_calc));
-        }
-    }
-    legal_moves
-}
-
 pub fn generate_bit_board(board: &Vec<i8>, is_white_turn: bool) -> u64 {
     let is_white_bit_board = !is_white_turn;
-    let all_legal_moves = generate_all_colored_pseudolegal_moves(board, is_white_bit_board, true);
-    let iter_moves = all_legal_moves.clone();
     let mut bitboard: u64 = 0;
 
-    for move_index in iter_moves.into_keys() {
-        for moves in all_legal_moves[&move_index].clone() {
-            bitboard += 2u64.pow(moves as u32);
-            print!("{:?} : {:?}, ", moves, 2u64.pow(moves as u32));
+    let mut i = 0;
+    for piece in board.to_vec() {
+        if piece != 0 && is_white(piece) == is_white_bit_board {
+            for attacked_square in generate_pseudolegal_moves(piece, i, &board.to_vec(), true) {
+                bitboard |= 2u64.pow(attacked_square as u32);
+            }
         }
+        i += 1;
     }
 
-    println!("bitboard : {:?}", bitboard);
+    println!("bitboard : {:#b}", bitboard);
 
     bitboard
 }
