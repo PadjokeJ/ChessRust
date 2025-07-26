@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 
 pub enum Pieces {
     PAWN = 1,
@@ -75,7 +74,7 @@ pub fn push_if_inbounds(legal_moves: &mut Vec<usize>, file: i32, rank: i32) {
     }
 }
 
-pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8>, is_bit_board_calc: bool) -> Vec<usize> {
+pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8>, is_bit_board_calc: bool, en_passant_index: usize) -> Vec<usize> {
     let mut legal_moves: Vec<usize> = Vec::new();
     let piece_type = piece & 7;
     let piece_is_white = is_white(piece);
@@ -100,7 +99,8 @@ pub fn generate_pseudolegal_moves(piece: i8, starting_index: i32, board: &Vec<i8
             }
         }
         for x_dir in vec![-1, 1] {
-            if is_enemy(board, piece_is_white, x + x_dir, y + xy_dir(dir)) || is_bit_board_calc {
+            if is_enemy(board, piece_is_white, x + x_dir, y + xy_dir(dir)) 
+            || en_passant_index == index_of(x + x_dir, y + xy_dir(dir)) || is_bit_board_calc {
                 push_if_inbounds(&mut legal_moves, x + x_dir, y + xy_dir(dir));
             }
         }
@@ -209,7 +209,7 @@ pub fn generate_bit_board(board: &Vec<i8>, is_white_turn: bool) -> u64 {
     let mut i = 0;
     for piece in board.to_vec() {
         if piece != 0 && is_white(piece) == is_white_bit_board {
-            for attacked_square in generate_pseudolegal_moves(piece, i, &board.to_vec(), true) {
+            for attacked_square in generate_pseudolegal_moves(piece, i, &board.to_vec(), true, 999) {
                 bitboard |= 2u64.pow(attacked_square as u32);
             }
         }
@@ -221,8 +221,8 @@ pub fn generate_bit_board(board: &Vec<i8>, is_white_turn: bool) -> u64 {
     bitboard
 }
 
-pub fn generate_legal_moves(piece: i8, starting_index: i32, board: &Vec<i8>, bitboard: u64) -> Vec<usize> {
-    let mut pseudo_legal_moves = generate_pseudolegal_moves(piece, starting_index, board, false);
+pub fn generate_legal_moves(piece: i8, starting_index: i32, board: &Vec<i8>, bitboard: u64, en_passant_index: usize) -> Vec<usize> {
+    let mut pseudo_legal_moves = generate_pseudolegal_moves(piece, starting_index, board, false, en_passant_index);
 
     let king_index = board.iter()
         .position( |id| 

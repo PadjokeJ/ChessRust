@@ -12,7 +12,7 @@ use sdl2::image::InitFlag;
 
 use vectors::v2::V2;
 
-use crate::chess::{file_of, is_white, rank_of};
+use crate::chess::{file_of, index_of, is_white, rank_of, Pieces};
 
 extern crate sdl2;
 
@@ -21,10 +21,13 @@ mod fen;
 mod chess;
 
 fn main() {
-    let debug_bitboard = true;
+    let debug_bitboard = false;
 
 
     let mut board: Vec<i8> = fen::translate_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR".to_string());
+
+    let mut en_passant: bool = false;
+    let mut en_passant_index: usize = 999;
 
     println!("{:?}", board);
 
@@ -111,7 +114,7 @@ fn main() {
 
                 if hand != 0 {
                     bitboard = chess::generate_bit_board(&board, is_white_turn);
-                    legal_piece_moves = chess::generate_legal_moves(hand, original_index as i32, &board, bitboard);
+                    legal_piece_moves = chess::generate_legal_moves(hand, original_index as i32, &board, bitboard, en_passant_index);
                 }
 
                 pick_up = false;
@@ -135,6 +138,20 @@ fn main() {
 
                     if legal 
                     && index != original_index{
+                        if hand & 7 == Pieces::PAWN as i8 {
+                            if index == en_passant_index {
+                                board[index_of(file_of(en_passant_index), rank_of(original_index))] = 0;
+                            }
+                            en_passant = false;
+                            en_passant_index = 999;
+                            if is_white(hand) && rank_of(original_index) - 2 == rank_of(index) {
+                                en_passant_index = original_index - 8;
+                                en_passant = true;
+                            } else if !is_white(hand) && rank_of(original_index) + 2 == rank_of(index) {
+                                en_passant_index = original_index + 8;
+                                en_passant = true;
+                            }
+                        }
                         board[index] = hand;
                         hand = 0;
                         is_white_turn = !is_white_turn;
