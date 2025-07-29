@@ -14,7 +14,7 @@ use std::cmp::min;
 
 use vectors::v2::V2;
 
-use crate::chess::{checkmate, file_of, index_of, is_white, rank_of, Pieces};
+use crate::chess::{checkmate, file_of, index_of, is_white, make_move, rank_of, MoveResult, Pieces};
 
 extern crate sdl2;
 
@@ -25,7 +25,7 @@ mod chess;
 mod bot;
 
 fn main() {
-    let debug_bitboard = false;
+    let debug_bitboard = true;
 
     let bot_playing = false;
 
@@ -164,38 +164,22 @@ fn main() {
             if chess::in_bounds(x, y) {
                 let index = chess::index_of(x, y) as usize;
 
-                let legal = is_white_turn == is_white(hand) && legal_piece_moves.contains(&index);
+                let res = make_move(is_white_turn, &mut board, &mut legal_piece_moves, bitboard, hand, original_index, index, &mut en_passant_index, false);
 
-                if legal 
-                && index != original_index{
-                    if hand & 7 == Pieces::PAWN as i8 {
-                        if index == en_passant_index {
-                            board[index_of(file_of(en_passant_index), rank_of(original_index))] = 0;
-                        }
-                        en_passant_index = 999;
-                        if is_white(hand) && rank_of(original_index) - 2 == rank_of(index) {
-                            en_passant_index = original_index - 8;
-                        } else if !is_white(hand) && rank_of(original_index) + 2 == rank_of(index) {
-                            en_passant_index = original_index + 8;
-                        }
+                println!("{:?}", res);
 
-                        if rank_of(index) == 0 || rank_of(index) == 7 {
-                            promotion_index = index;
-                            pawn_promoting = true;
-                        }
-                    }
-                    board[index] = hand;
-                    hand = 0;
+                let mut fail = false;
+
+                match res {
+                    MoveResult::Promotion(x) => promotion_index = x,
+                    MoveResult::Checkmate => will_end = true,
+                    MoveResult::Fail => fail = true,
+                    _ => (),
+                }
+                hand = 0;
+                if !fail {
                     is_white_turn = !is_white_turn;
-
-                    if checkmate(is_white_turn, &board, bitboard, en_passant_index) {
-                        println!("Checkmate !");
-
-                        will_end = true;
-                    }
-                } else {
-                    board[original_index] = hand;
-                    hand = 0;
+                    en_passant_index = 999;
                 }
 
                 legal_piece_moves.clear();

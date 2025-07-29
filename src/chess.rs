@@ -1,6 +1,18 @@
 use std::collections::HashMap;
 
+#[derive(Debug)]
+pub enum MoveResult {
+    Capture(Pieces),
+    Castle,
+    Check,
+    Checkmate,
+    Fail,
+    Move,
+    Promotion(usize),
+}
 
+#[derive(Debug)]
+#[repr(i8)]
 pub enum Pieces {
     PAWN = 1,
     BISH = 2,
@@ -282,7 +294,7 @@ pub fn generate_all_legal_moves(white_turn: bool, board: &Vec<i8>, bitboard: u64
 }
 
 pub fn checkmate(white_turn: bool, board: &Vec<i8>, bitboard: u64, en_passant_index: usize) -> bool {
-    let legal_moves = generate_all_legal_moves(white_turn, board, bitboard, en_passant_index);
+    let legal_moves = generate_all_legal_moves(!white_turn, board, bitboard, en_passant_index);
 
     for piece in legal_moves.clone().keys() {
         if legal_moves[piece].len() != 0 {
@@ -291,4 +303,36 @@ pub fn checkmate(white_turn: bool, board: &Vec<i8>, bitboard: u64, en_passant_in
     }
 
     true
+}
+
+pub fn make_move(is_white_turn: bool, board: &mut Vec<i8>, legal_piece_moves: &mut Vec<usize>, bitboard: u64, piece: i8, original_index: usize, index: usize, en_passant_index: &mut usize, can_castle: bool) -> MoveResult {
+    let legal = legal_piece_moves.contains(&index);
+
+    if is_white_turn == is_white(piece)
+    && legal 
+    && index != original_index{
+        if piece & 7 == Pieces::PAWN as i8 {
+            if index == *en_passant_index {
+                board[index_of(file_of(*en_passant_index), rank_of(original_index))] = 0;
+            }
+            *en_passant_index == 999;
+            if is_white(piece) && rank_of(original_index) - 2 == rank_of(index) {
+                *en_passant_index = original_index - 8;
+            } else if !is_white(piece) && rank_of(original_index) + 2 == rank_of(index) {
+                *en_passant_index = original_index + 8;
+            }
+            if rank_of(index) == 0 || rank_of(index) == 7 {
+                return MoveResult::Promotion(index);
+            }
+        }
+        board[index] = piece;
+        if checkmate(is_white_turn, &board, bitboard, *en_passant_index) {
+            return MoveResult::Checkmate;
+        }
+    } else {
+        board[original_index] = piece;
+        return MoveResult::Fail;
+    }
+
+    MoveResult::Move
 }
