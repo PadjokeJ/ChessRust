@@ -14,7 +14,7 @@ use std::cmp::min;
 
 use vectors::v2::V2;
 
-use crate::chess::{checkmate, file_of, index_of, is_white, make_move, rank_of, MoveResult, Pieces};
+use crate::chess::{checkmate, file_of, make_move, rank_of, MoveResult, Pieces};
 
 extern crate sdl2;
 
@@ -69,7 +69,6 @@ fn main() {
     canvas.clear();
     canvas.present();
 
-    let mut event_pump = sdl_context.event_pump().unwrap();
 
     let mut mouse_coords = V2::zero();
     let mut pick_up: bool = false;
@@ -95,7 +94,7 @@ fn main() {
     'main: loop {
         let dt = Instant::now();
 
-        for event in event_pump.poll_iter() {
+        for event in sdl_context.event_pump().unwrap().poll_iter() {
             match event {
                 Event::Quit { .. }
                 | Event::KeyDown {
@@ -303,7 +302,7 @@ fn main() {
     'gameover: loop {
         let dt = Instant::now();
 
-        for event in event_pump.poll_iter() {
+        for event in sdl_context.event_pump().unwrap().poll_iter() {
             match event {
                 Event::Quit { .. }
                 | Event::KeyDown {

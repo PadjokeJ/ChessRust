@@ -1,4 +1,4 @@
-use crate::chess::{self, generate_all_legal_moves};
+use crate::chess::generate_all_legal_moves;
 
 pub fn turn(is_white_turn: bool, board: &Vec<i8>, bitboard: u64, en_passant_index: usize) -> (usize, usize) {
     let legal_moves = generate_all_legal_moves(is_white_turn, board, bitboard, en_passant_index);
